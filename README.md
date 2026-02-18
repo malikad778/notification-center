@@ -7,6 +7,8 @@
 
 **Laravel Notification Center** is a high-performance, enterprise-grade notification microservice built with **Laravel 12** and **PHP 8.4**. It provides a scalable, multi-channel architecture for dispatching real-time notifications via Email, SMS, Push, Slack, and WhatsApp.
 
+![Dashboard Screenshot](dashboard_heo.png)
+
 ---
 
 ## Architecture
