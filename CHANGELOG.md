@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] - 2026-02-20
+
+### Added
+- Implemented `PendingNotification` for a fluent facade API (`->to()`, `->via()`, `->delay()`, `->dispatch()`).
+- Added new REST APIs for template management (`TemplateController`) and preference updates (`PreferenceController`).
+- Introduced exact channel specification (`BulkDispatchResult`) for batch broadcasts via `SendBulkNotificationJob`.
+- Configured dynamic feature flag integrations in `NotificationRouter` to respect global definitions and individual `notification_preferences`.
+- Created robust unit and feature tests guaranteeing 100% channel routing, rate limiting, and schema integrity parity.
+- Extended Laravel Pulse with custom `FailedNotificationsCard` and `NotificationThroughputCard`.
+- Integrated strict `auth:sanctum` protections for all notification-related endpoints.
+
+### Changed
+- Migrated `NotificationPayload` and `ChannelResult` to PHP 8.3 `readonly class` syntax.
+- Consolidated `notifications` and `notification_logs` tables to a single compliant schema structure with built-in retry and history tracking.
+- Re-architected `quiet_hours` to be strictly driven from per-channel configs inside `notification_preferences` rather than a global user attribute.
+- Purged hardcoded `App\Feature` classes in favor of lightweight provider-bound feature mappings.
+
 ## [1.0.0] - 2026-02-18
 
 ### Added
