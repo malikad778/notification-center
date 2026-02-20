@@ -19,14 +19,30 @@ class NotificationDispatcher
     ) {}
 
     /**
+     * Start a fluent notification dispatch.
+     */
+    public function send(Notifiable $user, NotificationPayload $payload): PendingNotification
+    {
+        return new PendingNotification($this, $user, $payload);
+    }
+
+    /**
+     * Dispatch notification to a bulk list of users.
+     */
+    public function sendBulk(array $users, NotificationPayload $payload, array $channels = []): void
+    {
+        \malikad778\NotificationCenter\Jobs\SendBulkNotificationJob::dispatch($users, $payload, $channels);
+    }
+
+    /**
      * Dispatch notification to all resolved channels in parallel.
      * 
      * @return array<string, ChannelResult>
      */
-    public function dispatch(Notifiable $user, NotificationPayload $payload, NotificationPriority $priority = NotificationPriority::Normal): array
+    public function dispatch(Notifiable $user, NotificationPayload $payload, NotificationPriority $priority = NotificationPriority::Normal, array $overrideChannels = []): array
     {
         // 1. Resolve Channels via Router (Pennant)
-        $channels = $this->router->resolve($user);
+        $channels = empty($overrideChannels) ? $this->router->resolve($user) : $overrideChannels;
 
         // 2. Quiet Hours filtering
         if ($user->isInQuietHours() && $priority !== NotificationPriority::Urgent) {
@@ -42,27 +58,30 @@ class NotificationDispatcher
         // 3. Grouping
         $groupId = $this->grouper->handle($user, $payload);
 
-        // 4. Persist "Master" Notification Record
-        // (Required for logs and Database channel)
-        $notification = \malikad778\NotificationCenter\Models\Notification::create([
-            'id' => (string) \Illuminate\Support\Str::uuid(),
-            'type' => 'App\Notifications\GenericNotification',
-            'notifiable_type' => get_class($user),
-            'notifiable_id' => $user->id,
-            'data' => [
-                'title' => $payload->title,
-                'body' => $payload->body,
-                'actionUrl' => $payload->actionUrl,
-                'imageUrl' => $payload->imageUrl,
-                'data' => $payload->data,
-            ],
-            'notification_group_id' => $groupId,
-            'read_at' => null, // Unread by default
-        ]);
-
-        // 5. Prepare Tasks for Concurrency
+        // 4. Create Notification Records & Prepare Tasks
         $tasks = [];
+        $notifications = [];
         foreach ($channels as $channel) {
+            $notification = \malikad778\NotificationCenter\Models\Notification::create([
+                'id' => (string) \Illuminate\Support\Str::uuid(),
+                'type' => 'App\Notifications\GenericNotification',
+                'notifiable_type' => get_class($user),
+                'notifiable_id' => method_exists($user, 'getAuthIdentifier') ? $user->getAuthIdentifier() : $user->id,
+                'channel' => $channel,
+                'payload' => [
+                    'title' => $payload->title,
+                    'body' => $payload->body,
+                    'actionUrl' => $payload->actionUrl,
+                    'imageUrl' => $payload->imageUrl,
+                    'data' => $payload->data,
+                ],
+                'status' => \malikad778\NotificationCenter\Enums\NotificationStatus::Pending,
+                'priority' => $priority,
+                'notification_group_id' => $groupId,
+                'read_at' => null, // Unread by default
+            ]);
+            $notifications[$channel] = $notification;
+            
             $tasks[] = fn () => $this->processChannel($user, $channel, $payload, $notification->id);
         }
 
@@ -82,6 +101,8 @@ class NotificationDispatcher
         foreach ($channels as $index => $channel) {
             $result = $results[$index] ?? new ChannelResult($channel, false, error: 'Internal Error');
             $keyedResults[$channel] = $result;
+
+            $notification = $notifications[$channel];
 
             if ($result->success) {
                 event(new \malikad778\NotificationCenter\Events\NotificationSent($notification, $result));
@@ -166,14 +187,6 @@ class NotificationDispatcher
             return $result;
 
         } catch (Throwable $e) {
-            \malikad778\NotificationCenter\Models\NotificationLog::create([
-                'notification_id' => $notificationId,
-                'channel' => $channelName,
-                'status' => \malikad778\NotificationCenter\Enums\NotificationStatus::Failed,
-                'failed_at' => now(),
-                'error_message' => $e->getMessage(),
-            ]);
-            
             $errorResult = new ChannelResult($channelName, false, error: $e->getMessage());
             
             return $errorResult;

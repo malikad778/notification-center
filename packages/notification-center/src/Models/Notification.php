@@ -22,12 +22,12 @@ class Notification extends Model
 
     protected $fillable = [
         'type', 'notifiable_type', 'notifiable_id', 
-        'data', 'status', 'priority', 'notification_group_id', 
+        'payload', 'status', 'attempts', 'channel', 'error_message', 'priority', 'notification_group_id', 
         'scheduled_at', 'sent_at', 'failed_at', 'read_at'
     ];
 
     protected $casts = [
-        'data' => 'array',
+        'payload' => 'array',
         'scheduled_at' => 'datetime',
         'sent_at' => 'datetime',
         'failed_at' => 'datetime',
@@ -39,10 +39,5 @@ class Notification extends Model
     public function notifiable(): MorphTo
     {
         return $this->morphTo();
-    }
-
-    public function logs(): HasMany
-    {
-        return $this->hasMany(NotificationLog::class);
     }
 }

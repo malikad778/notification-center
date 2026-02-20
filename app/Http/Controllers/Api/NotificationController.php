@@ -106,68 +106,63 @@ class NotificationController extends Controller
     }
 
     /**
-     * Get user notification preferences.
+     * Trigger a notification send from an external system.
      * 
-     * @OA\Get(
-     *      path="/notifications/preferences",
-     *      tags={"Preferences"},
-     *      summary="Get user preferences",
-     *      @OA\Response(
-     *          response=200,
-     *          description="User preferences"
-     *      )
+     * @OA\Post(
+     *      path="/notifications/send",
+     *      tags={"Notifications"},
+     *      summary="Send notification"
      * )
      */
-    public function getPreferences(): JsonResponse
+    public function send(\App\Http\Requests\SendNotificationRequest $request): JsonResponse
     {
-        $user = Auth::user();
-        // Assuming relationship exists or we query manually
-        $prefs = \malikad778\NotificationCenter\Models\NotificationPreference::where('user_id', $user->id)->get();
-        return response()->json($prefs);
+        $validated = $request->validated();
+        
+        $payload = new \malikad778\NotificationCenter\DTOs\NotificationPayload(
+            title: $validated['title'],
+            body: $validated['body'],
+            data: $validated['data'] ?? [],
+            actionUrl: $validated['action_url'] ?? null,
+            imageUrl: $validated['image_url'] ?? null,
+        );
+
+        foreach ($validated['users'] as $userId) {
+            $user = \App\Models\User::find($userId);
+            if ($user) {
+                \malikad778\NotificationCenter\Facades\NotificationCenter::send($user, $payload)
+                    ->via($validated['channels'] ?? [])
+                    ->dispatch();
+            }
+        }
+
+        return response()->json(['message' => 'Notification dispatched']);
     }
 
     /**
-     * Update user notification preferences.
+     * Trigger a bulk notification send.
      * 
-     * @OA\Put(
-     *      path="/notifications/preferences",
-     *      tags={"Preferences"},
-     *      summary="Update user preferences",
-     *      @OA\RequestBody(
-     *          required=true,
-     *          @OA\JsonContent(
-     *              @OA\Property(property="channel", type="string", example="email"),
-     *              @OA\Property(property="enabled", type="boolean", example=true),
-     *              @OA\Property(property="frequency_limit", type="integer", example=10)
-     *          )
-     *      ),
-     *      @OA\Response(
-     *          response=200,
-     *          description="Preference updated"
-     *      )
+     * @OA\Post(
+     *      path="/notifications/bulk",
+     *      tags={"Notifications"},
+     *      summary="Send bulk notification"
      * )
      */
-    public function updatePreferences(Request $request): JsonResponse
+    public function sendBulk(\App\Http\Requests\SendNotificationRequest $request): JsonResponse
     {
-        $request->validate([
-            'channel' => ['required', 'string'],
-            'enabled' => ['boolean'],
-            'frequency_limit' => ['integer', 'min:1'],
-        ]);
-
-        $user = Auth::user();
+        $validated = $request->validated();
         
-        $pref = \malikad778\NotificationCenter\Models\NotificationPreference::updateOrCreate(
-            [
-                'user_id' => $user->id,
-                'channel' => $request->input('channel'),
-            ],
-            [
-                'enabled' => $request->input('enabled', true),
-                'frequency_limit' => $request->input('frequency_limit'),
-            ]
+        $payload = new \malikad778\NotificationCenter\DTOs\NotificationPayload(
+            title: $validated['title'],
+            body: $validated['body'],
+            data: $validated['data'] ?? [],
+            actionUrl: $validated['action_url'] ?? null,
+            imageUrl: $validated['image_url'] ?? null,
         );
 
-        return response()->json($pref);
+        $users = \App\Models\User::whereIn('id', $validated['users'])->get()->all();
+
+        \malikad778\NotificationCenter\Facades\NotificationCenter::sendBulk($users, $payload, $validated['channels'] ?? []);
+
+        return response()->json(['message' => 'Bulk notification dispatched']);
     }
 }

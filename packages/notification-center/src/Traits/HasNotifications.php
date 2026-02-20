@@ -21,22 +21,38 @@ trait HasNotifications
     /**
      * Check if the user is currently in quiet hours.
      */
-    public function isInQuietHours(): bool
+    public function isInQuietHours(?string $channel = null): bool
     {
-        if (! $this->quiet_hours_start || ! $this->quiet_hours_end) {
+        $prefs = $channel 
+            ? $this->notificationPreferences()->where('channel', $channel)->get()
+            : $this->notificationPreferences()->get();
+
+        if ($prefs->isEmpty()) {
             return false;
         }
 
         $now = now();
-        $start = $now->copy()->setTimeFromTimeString($this->quiet_hours_start);
-        $end = $now->copy()->setTimeFromTimeString($this->quiet_hours_end);
 
-        if ($start->greaterThan($end)) {
-            // Quiet hours span across midnight (e.g. 22:00 to 07:00)
-            return $now->greaterThanOrEqualTo($start) || $now->lessThanOrEqualTo($end);
+        foreach ($prefs as $pref) {
+            if (! $pref->quiet_hours_start || ! $pref->quiet_hours_end) {
+                continue;
+            }
+
+            $start = $now->copy()->setTimeFromTimeString($pref->quiet_hours_start);
+            $end = $now->copy()->setTimeFromTimeString($pref->quiet_hours_end);
+
+            if ($start->greaterThan($end)) {
+                if ($now->greaterThanOrEqualTo($start) || $now->lessThanOrEqualTo($end)) {
+                    return true;
+                }
+            } else {
+                if ($now->between($start, $end)) {
+                    return true;
+                }
+            }
         }
 
-        return $now->between($start, $end);
+        return false;
     }
 
     /**

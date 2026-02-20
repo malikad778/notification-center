@@ -2,7 +2,7 @@
 
 namespace malikad778\NotificationCenter\DTOs;
 
-class ChannelResult
+readonly class ChannelResult
 {
     public function __construct(
         public string $channel,

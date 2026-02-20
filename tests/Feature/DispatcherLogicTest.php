@@ -4,7 +4,6 @@ use malikad778\NotificationCenter\DTOs\ChannelResult;
 use malikad778\NotificationCenter\DTOs\NotificationPayload;
 use malikad778\NotificationCenter\Enums\NotificationChannel;
 use malikad778\NotificationCenter\Enums\NotificationPriority;
-use App\Features\ReceiveEmail;
 use malikad778\NotificationCenter\Models\NotificationGroup;
 use App\Models\User;
 use malikad778\NotificationCenter\Services\NotificationDispatcher;
@@ -22,7 +21,7 @@ test('router uses pennant features to filter channels', function () {
     $user = User::factory()->create();
     
     // Define feature states
-    Feature::for($user)->activate(ReceiveEmail::class);
+    Feature::for($user)->activate('receive-email');
    
     \malikad778\NotificationCenter\Models\NotificationPreference::create([
         'user_id' => $user->id,
@@ -43,7 +42,17 @@ test('quiet hours suppress noisy channels', function () {
     $now = \Illuminate\Support\Carbon::create(2024, 1, 1, 23, 0, 0);
     \Illuminate\Support\Carbon::setTestNow($now);
 
-    $user = User::factory()->create([
+    $user = User::factory()->create();
+
+    \malikad778\NotificationCenter\Models\NotificationPreference::create([
+        'user_id' => $user->id,
+        'channel' => 'sms',
+        'quiet_hours_start' => '22:00',
+        'quiet_hours_end' => '07:00'
+    ]);
+    \malikad778\NotificationCenter\Models\NotificationPreference::create([
+        'user_id' => $user->id,
+        'channel' => 'broadcast',
         'quiet_hours_start' => '22:00',
         'quiet_hours_end' => '07:00'
     ]);
@@ -63,7 +72,17 @@ test('urgent priority bypasses quiet hours', function () {
     $now = \Illuminate\Support\Carbon::create(2024, 1, 1, 23, 0, 0);
     \Illuminate\Support\Carbon::setTestNow($now);
 
-    $user = User::factory()->create([
+    $user = User::factory()->create();
+
+    \malikad778\NotificationCenter\Models\NotificationPreference::create([
+        'user_id' => $user->id,
+        'channel' => 'sms',
+        'quiet_hours_start' => '22:00',
+        'quiet_hours_end' => '07:00'
+    ]);
+    \malikad778\NotificationCenter\Models\NotificationPreference::create([
+        'user_id' => $user->id,
+        'channel' => 'broadcast',
         'quiet_hours_start' => '22:00',
         'quiet_hours_end' => '07:00'
     ]);

@@ -18,6 +18,13 @@ class NotificationCenterServiceProvider extends ServiceProvider
 {
     public function boot()
     {
+        \Laravel\Pennant\Feature::define('receive-email', fn ($user) => true);
+        \Laravel\Pennant\Feature::define('receive-sms', fn ($user) => true);
+        \Laravel\Pennant\Feature::define('receive-database', fn ($user) => true);
+        \Laravel\Pennant\Feature::define('receive-broadcast', fn ($user) => true);
+        \Laravel\Pennant\Feature::define('receive-whatsapp', fn ($user) => $user->plan === 'premium');
+        \Laravel\Pennant\Feature::define('receive-push', fn ($user) => $user->has_mobile_app ?? false);
+
         if ($this->app->runningInConsole()) {
             $this->publishes([
                 __DIR__.'/../config/notification-center.php' => config_path('notification-center.php'),
@@ -50,6 +57,10 @@ class NotificationCenterServiceProvider extends ServiceProvider
             $events->listen(\malikad778\NotificationCenter\Events\NotificationSent::class, [NotificationPulseRecorder::class, 'record']);
             $events->listen(\malikad778\NotificationCenter\Events\NotificationFailed::class, [NotificationPulseRecorder::class, 'record']);
         }
+        
+        $events = $this->app->make(\Illuminate\Contracts\Events\Dispatcher::class);
+        $events->listen(\malikad778\NotificationCenter\Events\NotificationSent::class, \malikad778\NotificationCenter\Listeners\LogNotificationResult::class);
+        $events->listen(\malikad778\NotificationCenter\Events\NotificationFailed::class, \malikad778\NotificationCenter\Listeners\LogNotificationResult::class);
     }
 
     public function register()
@@ -59,7 +70,6 @@ class NotificationCenterServiceProvider extends ServiceProvider
         $this->app->singleton(NotificationDispatcher::class);
         $this->app->singleton(NotificationRouter::class);
         $this->app->singleton(NotificationRateLimiter::class);
-        $this->app->singleton(NotificationBatchService::class);
         $this->app->singleton(NotificationTemplateService::class);
         $this->app->singleton(NotificationGrouper::class);
         $this->app->singleton(FallbackResolver::class);

@@ -17,7 +17,7 @@ interface Notifiable
     /**
      * Check if the notifiable entity is currently in quiet hours.
      */
-    public function isInQuietHours(): bool;
+    public function isInQuietHours(?string $channel = null): bool;
 
     /**
      * Get the primary identifier for a specific channel (e.g. email, phone_number, fcm_token).

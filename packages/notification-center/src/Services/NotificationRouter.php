@@ -3,10 +3,6 @@
 namespace malikad778\NotificationCenter\Services;
 
 use malikad778\NotificationCenter\Enums\NotificationChannel;
-use App\Features\ReceiveBroadcast;
-use App\Features\ReceiveDatabase;
-use App\Features\ReceiveEmail;
-use App\Features\ReceiveSms;
 use malikad778\NotificationCenter\Contracts\Notifiable;
 use Laravel\Pennant\Feature;
 
@@ -19,27 +15,37 @@ class NotificationRouter
      */
     public function resolve(Notifiable $user, array $requestedChannels = []): array
     {
-        // Map channel names to Feature classes
+        // Map channel names to Feature strings
         $featureMap = [
-            NotificationChannel::Mail->value => ReceiveEmail::class,
-            NotificationChannel::Sms->value => ReceiveSms::class,
-            NotificationChannel::Database->value => ReceiveDatabase::class,
-            NotificationChannel::Broadcast->value => ReceiveBroadcast::class,
+            NotificationChannel::Mail->value => 'receive-email',
+            NotificationChannel::Sms->value => 'receive-sms',
+            NotificationChannel::Database->value => 'receive-database',
+            NotificationChannel::Broadcast->value => 'receive-broadcast',
+            NotificationChannel::WhatsApp->value => 'receive-whatsapp',
+            NotificationChannel::Push->value => 'receive-push',
         ];
 
         // If no specifically requested channels, check all available in the map
         $candidates = empty($requestedChannels) ? array_keys($featureMap) : $requestedChannels;
         $activeChannels = [];
 
-        foreach ($candidates as $channel) {
-            $featureClass = $featureMap[$channel] ?? null;
+        // Check user preferences
+        $preferences = method_exists($user, 'notificationPreferences') 
+            ? $user->notificationPreferences()->get()->keyBy('channel')
+            : collect();
 
-            if ($featureClass && Feature::for($user)->active($featureClass)) {
+        foreach ($candidates as $channel) {
+            // Respect opt-out preference
+            if ($preferences->has($channel) && !$preferences->get($channel)->enabled) {
+                continue;
+            }
+
+            $featureName = $featureMap[$channel] ?? null;
+
+            if ($featureName && Feature::for($user)->active($featureName)) {
                 $activeChannels[] = $channel;
-            } elseif (!$featureClass) {
+            } elseif (!$featureName) {
                 // If no feature toggle exists for a channel, assume it's valid if registered
-                // OR strict mode: ignore it. We'll assume strict pennant control here.
-                // For now, let's allow it if it's in our Enum but has no feature class (future proofing)
                 if (NotificationChannel::tryFrom($channel)) {
                     $activeChannels[] = $channel;
                 }

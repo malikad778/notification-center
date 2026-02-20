@@ -24,10 +24,11 @@ class NotificationFactory extends Factory
             'type' => 'App\Notifications\GenericNotification',
             'notifiable_type' => User::class,
             'notifiable_id' => User::factory(),
-            'data' => [
+            'payload' => [
                 'title' => $this->faker->sentence,
                 'body' => $this->faker->paragraph,
             ],
+            'channel' => $this->faker->randomElement(['mail', 'database', 'sms', 'push']),
             'status' => NotificationStatus::Sent,
             'priority' => NotificationPriority::Normal,
             'sent_at' => now(),

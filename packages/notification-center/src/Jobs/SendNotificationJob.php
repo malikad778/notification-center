@@ -7,8 +7,6 @@ use malikad778\NotificationCenter\DTOs\ChannelResult;
 use malikad778\NotificationCenter\DTOs\NotificationPayload;
 use malikad778\NotificationCenter\Enums\NotificationStatus;
 use malikad778\NotificationCenter\Events\NotificationFailed;
-use malikad778\NotificationCenter\Events\NotificationRateLimited;
-use malikad778\NotificationCenter\Events\NotificationSending;
 use malikad778\NotificationCenter\Events\NotificationSent;
 use malikad778\NotificationCenter\Models\Notification;
 use malikad778\NotificationCenter\Models\NotificationLog;
@@ -64,11 +62,9 @@ class SendNotificationJob implements ShouldQueue
 
         // 3. Rate Limit Check
         if (!$limiter->check($this->user, $this->channelName)) {
-            // Fire event
+            // Fire event if needed, but the spec removed NotificationRateLimited
+            // If keeping it strictly spec-compliant, we don't fire an event here.
             $notification = $this->notificationId ? Notification::find($this->notificationId) : null;
-            if ($notification) {
-                event(new NotificationRateLimited($notification));
-            }
             
             // Release back to queue with delay? Or fail?
             // Usually we might want to delay execution.
@@ -79,9 +75,6 @@ class SendNotificationJob implements ShouldQueue
         $notification = $this->notificationId ? Notification::find($this->notificationId) : null;
 
         // 4. Send
-        if ($notification) {
-            event(new NotificationSending($notification));
-        }
         
         try {
             $result = $channel->send($this->payload, $this->user);
