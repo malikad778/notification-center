@@ -27,7 +27,7 @@ class SendBulkNotificationJob implements ShouldQueue
         $jobs = [];
         
         foreach ($this->users as $user) {
-            $userChannels = empty($this->channels) ? $router->getChannelsFor($user) : $this->channels;
+            $userChannels = empty($this->channels) ? $router->resolve($user) : $this->channels;
             
             foreach ($userChannels as $channel) {
                 $jobs[] = new SendNotificationJob($user, $channel, $this->payload);

@@ -140,12 +140,9 @@ class NotificationDispatcher
             if ($result->success) {
                 $limiter->increment($user, $channelName);
                 
-                \malikad778\NotificationCenter\Models\NotificationLog::create([
-                    'notification_id' => $notificationId,
-                    'channel' => $channelName,
+                \malikad778\NotificationCenter\Models\Notification::where('id', $notificationId)->update([
                     'status' => \malikad778\NotificationCenter\Enums\NotificationStatus::Sent,
-                    'sent_at' => now(),
-                    'metadata' => ['message_id' => $result->messageId]
+                    'sent_at' => now()
                 ]);
                 
                 return $result;
@@ -163,12 +160,10 @@ class NotificationDispatcher
                     $backupResult = $backupInstance->send($payload, $user);
                     
                     if ($backupResult->success) {
-                        \malikad778\NotificationCenter\Models\NotificationLog::create([
-                            'notification_id' => $notificationId,
+                        \malikad778\NotificationCenter\Models\Notification::where('id', $notificationId)->update([
                             'channel' => $channelName . '_fallback_' . $backupChannelName,
                             'status' => \malikad778\NotificationCenter\Enums\NotificationStatus::Sent,
-                            'sent_at' => now(),
-                            'metadata' => ['original_channel' => $channelName]
+                            'sent_at' => now()
                         ]);
                         
                         return new ChannelResult($channelName, true, messageId: 'fallback-' . $backupResult->messageId);
@@ -176,9 +171,7 @@ class NotificationDispatcher
                 }
             }
 
-            \malikad778\NotificationCenter\Models\NotificationLog::create([
-                'notification_id' => $notificationId,
-                'channel' => $channelName,
+            \malikad778\NotificationCenter\Models\Notification::where('id', $notificationId)->update([
                 'status' => \malikad778\NotificationCenter\Enums\NotificationStatus::Failed,
                 'failed_at' => now(),
                 'error_message' => $result->error,

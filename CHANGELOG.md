@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.1] - 2026-02-20
+
+### Fixed
+- **CRITICAL**: Removed obsolete `NotificationLog` creation calls causing fatal exceptions in `NotificationDispatcher`.
+- **CRITICAL**: Fixed undefined router method call (`getChannelsFor`) inside `SendBulkNotificationJob`. 
+- Added `send()` and `sendBulk()` static method signatures to the `NotificationCenter` facade docblocks to support the fluent IDE API.
+- Fixed Pennant Features failing to register by migrating their declarations into `AppServiceProvider@boot`. 
+- Added missing `name` and `driver` columns to `notification_channels` migration.
+- Added missing `notification_type` and `fallback_channels` columns to the `notification_preferences` migration.
+- Restored `Read`, `Retrying` and standard `label()` mapping capabilities to `NotificationStatus` enum.
+- Re-architected system test suite paths and added `PennantFeatureFlagTest.php`.
+
 ## [1.1.0] - 2026-02-20
 
 ### Added
