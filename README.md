@@ -10,6 +10,17 @@
 
 ---
 
+## 🏗 Two Ways to Use
+
+This project is architected for maximum portability and developer productivity. It operates in two distinct modes:
+
+1. **Standalone Microservice (Plug & Play)**: The root repository is a lightweight, fully configured Laravel 12 implementation. It acts as an independent REST API service for orchestrating your system notifications, complete with Database configurations, API endpoints, and real-time Pulse monitoring.
+2. **Domain Package Integration**: The core engine lives completely encapsulated inside `packages/notification-center`. You can install this specific directory into your existing Laravel monoliths as a local package, consuming the Notification Center as an internal Domain Driven package without running a separate server.
+
+For detailed information on how to use the raw Domain logic, refer to the [Internal Package README](packages/notification-center/README.md).
+
+---
+
 ## What is it?
 The Notification Center acts as a centralized brain for outbound application messaging. It abstracts away the heavy lifting of determining *where*, *when*, and *how* a user should receive a message across varying platforms. 
 
