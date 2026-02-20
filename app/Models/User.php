@@ -24,6 +24,9 @@ class User extends Authenticatable implements \malikad778\NotificationCenter\Con
         'email',
         'password',
         'phone_number',
+        'plan',
+        'has_mobile_app',
+        'fcm_token',
         'quiet_hours_start',
         'quiet_hours_end',
     ];

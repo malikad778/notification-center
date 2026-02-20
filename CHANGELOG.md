@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.2] - 2026-02-20
+
+### Fixed
+- **CRITICAL**: Fixed silent Pennant feature flagging failure by successfully adding `plan`, `has_mobile_app`, and `fcm_token` columns to the main `users` schema.
+- **CRITICAL**: Fixed nesting batch failures inside `SendBulkNotificationJob` by unwrapping the inner bus dispatch into direct asynchronous queuing.
+- Ensured named argument compatibility (`to:` and `notification:`) directly matches facade docblock intentions inside `NotificationDispatcher::send()`.
+
 ## [1.1.1] - 2026-02-20
 
 ### Fixed

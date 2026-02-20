@@ -35,14 +35,9 @@ class SendBulkNotificationJob implements ShouldQueue
         }
 
         if (count($jobs) > 0) {
-            // Depending on how this job is dispatched, we might be building a batch here
-            // or we might want to just dispatch them directly.
-            // Since the requirements specify using Bus::batch() for bulk sending:
-            Bus::batch($jobs)
-                ->name('Bulk Notification Batch - ' . now()->toDateTimeString())
-                ->allowFailures()
-                ->onQueue('notifications')
-                ->dispatch();
+            foreach ($jobs as $job) {
+                dispatch($job);
+            }
         }
     }
 }

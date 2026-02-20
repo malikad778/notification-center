@@ -21,9 +21,9 @@ class NotificationDispatcher
     /**
      * Start a fluent notification dispatch.
      */
-    public function send(Notifiable $user, NotificationPayload $payload): PendingNotification
+    public function send(Notifiable $to, NotificationPayload $notification): PendingNotification
     {
-        return new PendingNotification($this, $user, $payload);
+        return new PendingNotification($this, $to, $notification);
     }
 
     /**
